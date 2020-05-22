@@ -170,7 +170,7 @@ if __name__ == '__main__':
 
         value = 0
         if len(idx_lst) > len(set(idx_lst)):
-            value = -10000
+            value = 1000000
         for idxf in idx_lst:
             idx = f_round(idxf)
             fromCity = tourmanager.getCity(idx)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
             else:
                 destination = tourmanager.getCity(idx_lst[0])
             value += fromCity.distanceTo(destination)
-        return value
+        return -value
         
     prob = Problem(num_of_variables=len(tourmanager.destinationCities),
     objectives=[getvalue],
@@ -188,6 +188,6 @@ if __name__ == '__main__':
     expand=False
     )
     evo = Evolution(prob, mutation_param = 20, num_of_generations=100)
-    evo.evolve()
-    print(evo[0].objectives[0])
+    evol = evo.evolve()
+    print(-evol[0].objectives[0])
 
