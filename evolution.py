@@ -6,7 +6,7 @@ import multiprocessing as mp
 import threading as thrd
 
 
-def f_para(obj,new_pop,i):
+def f_para(obj, new_pop, i):
     """Function to parallel"""
     obj.utils.fast_nondominated_sort(obj.population)
     for front in obj.population.fronts:
@@ -19,7 +19,7 @@ def f_para(obj,new_pop,i):
     while len(new_population) + len(obj.population.fronts[front_num]) <= obj.num_of_individuals:
         obj.utils.calculate_crowding_distance(obj.population.fronts[front_num])
         new_population.extend(obj.population.fronts[front_num])
-        front_num += 1    
+        front_num += 1
     obj.utils.calculate_crowding_distance(obj.population.fronts[front_num])
     obj.population.fronts[front_num].sort(key=lambda individual: individual.crowding_distance, reverse=True)
     new_population.extend(obj.population.fronts[front_num][0:obj.num_of_individuals-len(new_population)])
@@ -41,84 +41,65 @@ class Evolution:
         self.population = self.utils.create_initial_population()
         num_thrd = mp.cpu_count()
         new_pop = [Population()]*num_thrd
-        pre_best = []
-        
-        for gen in range(self.num_of_generations):
-            #Divide population1: divide to equal parts after shuffle
-                        
-            lst = []
-            idx = self.utils.num_of_individuals // num_thrd
-            tmp = 0
-            for j in range(num_thrd - 1):
-                evo = Evolution(self.utils.problem, num_of_individuals=idx)
-                evo.population = self.utils.assign_pop(self.population, tmp, tmp + idx)
-                tmp = tmp + idx
-                lst.append(evo)
+        lst = []
+        idx = self.utils.num_of_individuals // num_thrd
+        tmp = 0
+        for j in range(num_thrd - 1):
             evo = Evolution(self.utils.problem, num_of_individuals=idx)
-            evo.population = self.utils.assign_pop(self.population, tmp, len(self.population.population))
+            evo.population = self.utils.assign_pop(self.population, tmp, tmp + idx)
+            tmp = tmp + idx
             lst.append(evo)
-
-            # Divide2: divide to equal parts
-            # idx = self.utils.num_of_individuals // num_thrd
-            # tmp = 0
-            # lst = []
-            # for j in range(num_thrd - 1):
-            #     evo = Evolution(self.utils.problem, num_of_individuals=idx)
-            #     evo.population = self.utils.assign_pop(self.population, tmp, tmp + idx)
-            #     tmp = tmp + idx
-            #     lst.append(evo)
-            # evo = Evolution(self.utils.problem, num_of_individuals=idx)
-            # evo.population = self.utils.assign_pop(self.population, tmp, len(self.population.population))
-            # lst.append(evo)
-
-            #Divide3
-            # lst = [None]*num_thrd
-            # idx = self.utils.num_of_individuals // num_thrd
-            # for i in range(num_thrd):
-            #     lst[i] = Evolution(self.utils.problem, num_of_individuals=idx)
-            #     lst[i].population = Population()
+        evo = Evolution(self.utils.problem, num_of_individuals=self.utils.num_of_individuals - tmp)
+        evo.population = self.utils.assign_pop(self.population, tmp, len(self.population.population))
+        lst.append(evo)
             
-            # tmp = 0
-            # for i in range(0, idx*num_thrd,num_thrd):
-            #     tmp = i
-            #     for j in range(num_thrd):
-            #         lst[j].population.append(self.population.population[tmp])
-            #         tmp += 1
-            # count = 0
-            # while (tmp < len(self.population.population)):
-            #     lst[count].population.extend([self.population.population[tmp]])
-            #     tmp += 1
-            #     count += 1
-            
-
+        for gen in range(self.num_of_generations):
             t = [None]*num_thrd
-            i = 0
-            
+            id_num = 0
+            pre_best = []
             for evo in lst:
-                t[i] = thrd.Thread(target=f_para, args=(evo, new_pop, i))
-                t[i].start()
-                i = i+1
-                
-            self.population = Population()
-            sub_individuals = []
-            best_individual = None
-            for i in range(len(t)):
+                t[id_num] = thrd.Thread(target=f_para, args=(evo, new_pop, id_num))
+                t[id_num].start()
+                id_num = id_num + 1
+            runnerup_individuals = []
+            best_individuals = []
+            for i in range(num_thrd):
                 t[i].join()
                 self.utils.fast_nondominated_sort(new_pop[i])
-                if gen > 0:
-                    if (new_pop[i].fronts[0][0].objectives[0] == pre_best[i]):
-                        if pre_best[i] == max(pre_best):
-                            best_individual = new_pop[i].fronts[0][0]
-                    
-                sub_individuals.extend(new_pop[i].fronts[1:3][0])
-                pre_best.append(new_pop[i].fronts[0][0].objectives[0])
-               
-            random.shuffle(sub_individuals)
-            for i in range(len(t)):
-                if best_individual is not None:
-                    # new_pop[i].extend(best_individual)
-                    new_pop[i].append(best_individual)
-                new_pop[i].extend(sub_individuals[2*i:2*i+2]) 
-                self.population.extend(new_pop[i])
+                # if gen > 0:
+                #     if (new_pop[i].fronts[0][0].objectives[0] == pre_best[i]):
+                #         if pre_best[i] == max(pre_best):
+                #             best_individual = new_pop[i].fronts[0][0]
+                runnerup_individuals.extend(new_pop[i].fronts[1:3][0])
+                best_individuals.append(new_pop[i].fronts[0][0])
+            # for i in range(len(t)):
+            #     if best_individual is not None:
+            #         # new_pop[i].extend(best_individual)
+            #         new_pop[i].append(best_individual)
+            #     new_pop[i].extend(sub_individuals[2*i:2*i+2]) 
+            #     self.population.extend(new_pop[i])
+            for i in range(num_thrd):
+                new_pop[i].extend(runnerup_individuals)
+                self.utils.fast_nondominated_sort(new_pop[i])
+                if new_pop[i].fronts[0][0].objectives[0] == best_individuals[i].objectives[0]:
+                    for j in range(num_thrd):
+                        if i == j:
+                            continue
+                        else:
+                            new_pop[j].append(best_individuals[i])
+
+            for i in range(num_thrd):
+                self.utils.fast_nondominated_sort(new_pop[i])
+                temp_population = Population()
+                front_idx = 0
+                while len(temp_population) + len(new_pop[i].fronts[front_idx]) <= lst[i].num_of_individuals:
+                    self.utils.calculate_crowding_distance(new_pop[i].fronts[front_idx])
+                    temp_population.extend(new_pop[i].fronts[front_idx])
+                    front_idx +=1
+                lst[i].population = temp_population
+
+        self.population = Population()
+        for pop in new_pop:
+            self.population.extend(pop)
         self.utils.fast_nondominated_sort(self.population)
         return self.population.fronts[0]
