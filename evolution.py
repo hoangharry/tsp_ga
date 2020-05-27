@@ -17,7 +17,7 @@ def f_para(obj, new_pop, i):
     new_population = Population()
     front_num = 0
     while len(new_population) + len(obj.population.fronts[front_num]) <= obj.num_of_individuals:
-        print(obj.population.fronts[front_num])
+        # print(obj.population.fronts[front_num])
         obj.utils.calculate_crowding_distance(obj.population.fronts[front_num])
         new_population.extend(obj.population.fronts[front_num])
         front_num += 1
@@ -70,8 +70,20 @@ class Evolution:
             for i in range(num_thrd):
                 t[i].join()
                 self.utils.fast_nondominated_sort(new_pop[i])
-                runnerup_individuals.extend(new_pop[i].fronts[1:3][0])
+                # runnerup_individuals.extend(new_pop[i].fronts[1:3][0])
+                # best_individuals.append(new_pop[i].fronts[0][0])
                 best_individuals.append(new_pop[i].fronts[0][0])
+                if len(new_pop[i].fronts[0]) > 1:
+                    runnerup_individuals.append(new_pop[i].fronts[0][1])
+                    if len(new_pop[i].fronts[0]) > 2:
+                        runnerup_individuals.append(new_pop[i].fronts[0][2])
+                    else:
+                        runnerup_individuals.append(new_pop[i].fronts[1][0])
+                elif len(new_pop[i].fronts[1]) < 2:
+                    runnerup_individuals.append(new_pop[i].fronts[1][0])
+                    runnerup_individuals.append(new_pop[i].fronts[2][0])
+                else:
+                    runnerup_individuals.extend(new_pop[i].fronts[1][0:2])
 
             # Add the best individuals from other subpopulations
             for i in range(num_thrd):
