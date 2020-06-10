@@ -4,7 +4,9 @@ from population import Population
 import multiprocessing as mp
 import threading 
 def parallel_evolve(lock, sub_evolution, sub_population, i):
+    #lock.acquire()
     children = sub_evolution.utils.create_children(sub_evolution.population,lock)
+    #lock.release()
     sub_evolution.population.extend(children)
     sub_evolution.utils.fast_nondominated_sort(sub_evolution.population)
     new_population = Population()

@@ -20,10 +20,14 @@ class Problem:
         individual.features = [random.uniform(*x) for x in self.variables_range]
         return individual
 
-    def calculate_objectives(self, individual):
+    def calculate_objectives(self, individual,lock=None):
+        if lock is not None:
+            lock.acquire()
         if self.expand:
             individual.objectives = [f(*individual.features) for f in self.objectives]
         else:
             individual.objectives = [f(individual.features) for f in self.objectives]
+        if lock is not None:
+            lock.release()
         # for i in individual.objectives:
         #     print(i)
