@@ -89,6 +89,7 @@ class NSGA2Utils:
             children.append(child2)
         if lock is not None:
             lock.release()
+
         return children
 
     def __crossover(self, individual1, individual2):
