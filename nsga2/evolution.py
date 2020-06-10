@@ -3,8 +3,10 @@ from population import Population
 
 import multiprocessing as mp
 import threading 
-def parallel_evolve(sub_evolution, sub_population, i):
-    children = sub_evolution.utils.create_children(sub_evolution.population)
+
+def parallel_evolve(lock, sub_evolution, sub_population, i):
+    children = sub_evolution.utils.create_children(sub_evolution.population,lock)
+
     sub_evolution.population.extend(children)
     sub_evolution.utils.fast_nondominated_sort(sub_evolution.population)
     new_population = Population()
@@ -13,8 +15,12 @@ def parallel_evolve(sub_evolution, sub_population, i):
         sub_evolution.utils.calculate_crowding_distance(sub_evolution.population.fronts[front_num])
         new_population.extend(sub_evolution.population.fronts[front_num])
         front_num += 1
+
+    
     sub_evolution.utils.calculate_crowding_distance(sub_evolution.population.fronts[front_num])
     sub_evolution.population.fronts[front_num].sort(key=lambda individual: individual.crowding_distance, reverse=True)
+    
+
     new_population.extend(sub_evolution.population.fronts[front_num][0:sub_evolution.num_of_individuals-len(new_population)])
     sub_population[i] = new_population
 
@@ -48,14 +54,16 @@ class Evolution:
                 self.utils.calculate_crowding_distance(front)
 
         returned_population = None
-        print(self.num_of_generations//number_of_thread*2)
-        for gen in range(self.num_of_generations//number_of_thread*2):
+
+        print(self.num_of_generations)
+        for gen in range(self.num_of_generations):
             if (gen % 100) == 0:
                 print(gen)
             thread = [None]*4
             lock = threading.Lock()
             for i in range(number_of_thread):
-                thread[i] = threading.Thread(target=thread_task, args=(lock, sub_evolution[i],sub_population,i, ))
+                thread[i] = threading.Thread(target=parallel_evolve, args=(lock, sub_evolution[i],sub_population,i, ))
+
                 thread[i].start()
             
             runnerup_individuals = []
