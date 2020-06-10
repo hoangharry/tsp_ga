@@ -1,4 +1,4 @@
-from nsga2.individual import Individual
+from individual import Individual
 import random
 
 class Problem:
@@ -25,3 +25,5 @@ class Problem:
             individual.objectives = [f(*individual.features) for f in self.objectives]
         else:
             individual.objectives = [f(individual.features) for f in self.objectives]
+        # for i in individual.objectives:
+        #     print(i)

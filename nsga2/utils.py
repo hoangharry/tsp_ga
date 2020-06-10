@@ -1,4 +1,4 @@
-from nsga2.population import Population
+from population import Population
 import random
 
 class NSGA2Utils:
@@ -69,8 +69,10 @@ class NSGA2Utils:
         else:
             return -1
 
-    def create_children(self, population):
+    def create_children(self, population, lock = None):
         children = []
+        if lock is not None:
+                lock.acquire()
         while len(children) < len(population):
             parent1 = self.__tournament(population)
             parent2 = parent1
@@ -79,11 +81,14 @@ class NSGA2Utils:
             child1, child2 = self.__crossover(parent1, parent2)
             self.__mutate(child1)
             self.__mutate(child2)
+            
             self.problem.calculate_objectives(child1)
             self.problem.calculate_objectives(child2)
+            
             children.append(child1)
             children.append(child2)
-
+        if lock is not None:
+                lock.release()
         return children
 
     def __crossover(self, individual1, individual2):

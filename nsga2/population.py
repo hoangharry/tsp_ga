@@ -15,3 +15,6 @@ class Population:
 
     def append(self, new_individual):
         self.population.append(new_individual)
+    
+    def slicing(self, left, right):
+        return self.population[left:right]
